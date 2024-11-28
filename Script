@@ -1,0 +1,84 @@
+// ==UserScript==
+// @name         Youtube Downloader MP3 - Videos FUllHD
+// @namespace    https://github.com/blasperez/YouTube-Download-Button
+// @version      6.2
+// @description  Agrega un botón para descargar videos de YouTube usando Y2mate.
+// @author       BlasPerez
+// @match        *://*.youtube.com/*
+// @run-at       document-end
+// @grant        GM_openInTab
+// @connect      youtube.com
+// @connect      y2mate.lol
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    const Y2mateDownloader = {
+        init: function () {
+            this.observePageChanges();
+        },
+
+        observePageChanges: function () {
+            const observer = new MutationObserver(() => {
+                if (!document.querySelector("#y2mate-download-btn")) {
+                    this.addDownloadButton();
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+            });
+        },
+
+        addDownloadButton: function () {
+            const metaSection = document.querySelector("#meta #notification-preference-button") || document.querySelector("#above-the-fold");
+            if (!metaSection) return;
+
+            const button = this.createDownloadButton();
+            metaSection.parentNode.insertBefore(button, metaSection.nextSibling);
+        },
+
+        createDownloadButton: function () {
+            const button = document.createElement("button");
+            button.id = "y2mate-download-btn";
+            button.textContent = "Download";
+            button.style.cssText = `
+                min-height: 25px;
+                position: relative;
+                cursor: pointer;
+                font: 13px Arial;
+                background: #FC0A0A;
+                color: #fff;
+                text-transform: uppercase;
+                display: block;
+                padding: 10px 16px;
+                margin: 7px 7px;
+                border: 1px solid #FC0A0A;
+                border-radius: 2px;
+                font-weight: bold;
+            `;
+            button.onclick = this.handleButtonClick;
+            return button;
+        },
+
+        handleButtonClick: function () {
+            const videoId = Y2mateDownloader.getVideoId();
+            if (videoId) {
+                const downloadUrl = `https://y2mate.lol/convert/?videoId=${videoId}`;
+                GM_openInTab(downloadUrl, { active: true });
+            } else {
+                alert("No se pudo obtener el ID del video.");
+            }
+        },
+
+        getVideoId: function () {
+            const url = window.location.href;
+            const match = url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+            return match ? match[1] : null;
+        },
+    };
+
+    Y2mateDownloader.init();
+})();
